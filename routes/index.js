@@ -84,6 +84,7 @@ router.post('/signup', async(req, res) => {
 
     await user.save()
 
+    // add user_id to jwt payload
     const payload = {
       user: {
           id: user.id                
@@ -93,12 +94,16 @@ router.post('/signup', async(req, res) => {
   //create jsonwebtoken for authentication
   jwt.sign(payload, config.get('jwtSecret'), {expiresIn: 3600000 }, (err, token) => { 
       if(err) throw err;
+      // res.header("x-auth-token", {token})
       res.json({token})
+
+      // res.redirect('/profile')
+      // req.headers["x-auth-token"]= {token}
+      // res.redirect('/profile')
   }) 
 
-  // Redirect to /profile!!
-  // res.redirect('profile')
-
+  // Redirect to /profile?
+  
   } catch (err) {
     console.error(err);
     return res.status(500).send('Server error');
