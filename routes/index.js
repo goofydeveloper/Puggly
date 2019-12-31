@@ -1,110 +1,153 @@
 var express = require('express');
 var router = express.Router();
-const MongoClient = require('mongodb').MongoClient;
-const assert = require('assert');
- 
-// Connection URL
-const url = 'mongodb://localhost:27017';
- 
-// Database Name
-const dbName = 'myproject';
-
-router.get('/get-data', (req, res) => {
-    
-  MongoClient.connect(url, {
-    useUnifiedTopology: true
-  } ,(err, client) =>{
-    assert.equal(null, err);
-    console.log("Connected successfully to server");
-   
-    const db = client.db(dbName);
-   
-    const collection = db.collection('users')
-    collection.insertOne([
-      {user1: 1, user2: 2, user3: 3}
-    ], (err) => {
-      if(err) console.error(err);
-      console.log("Inserts successful");
-      client.close()
-    } )
-  });
-})
+const jwt = require('jsonwebtoken')
+const config = require('config')
+const User = require('../models/User')
+const auth = require('./auth')
 
 
-router.get('/', function(req, res, next) {
+
+// GET SECTION
+
+// GET SIGN UP PAGE :)
+router.get('/', (req, res) => {
   res.render('signup', { title: 'Puggly' });
 
 });
 
-router.post('/insert', (req, res) => {
+// GET MY PROFILE PAGE :)
+router.get('/profile', auth, async(req, res) => {
+
+  // 
+  try {
+    // Get user object
+    
+    user = await User.findOne({_id: req.user.id})    
+    
+    res.render('profile', {title: 'Puggly', user: user})
+    //res.render('profile', { title: 'Puggly' });
+
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send({msg: 'Server error'})
+  }
+
+});
+
+// GET MY OTHER USER POSTS :)
+router.get('/allposts', auth, async(req, res) => {
+
+  // 
+  try {
+    // Get users    
+    users = await User.find({})    
+    
+    res.render('allposts', {title: 'Puggly', users: users})
+
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send({msg: 'Server error'})
+  }
+
+});
+// GET ERROR PAGE :)
+router.get('/*', function(req, res, next) {
+  res.render('error', { title: 'Puggly' });
+});
+
+// LOGOUT / DELETE JWT ?
+router.get('/logout', auth,  (req, res) => {
+  req.user.id = null;
+
+  res.redirect('/')
+
+});
+
+// POST SECTION
+
+// POST FORM FOR USER CREATION :)
+router.post('/signup', async(req, res) => {
+  const {first_name,last_name,email,birthday,password}=req.body 
+ 
+  try {
+
+    // Find user
+    let user = await User.findOne({ email });
+    if (user) {
+        return res.status(400).json({ errors: [{msg: 'User already exists' }]})
+    }
+    
+    // Create User
+    user = new User({
+      first_name,last_name,email, birthday, password
+    })
+
+    await user.save()
+
+    const payload = {
+      user: {
+          id: user.id                
+      }
+  }
+
+  //create jsonwebtoken for authentication
+  jwt.sign(payload, config.get('jwtSecret'), {expiresIn: 3600000 }, (err, token) => { 
+      if(err) throw err;
+      res.json({token})
+  }) 
+
+  // Redirect to /profile!!
+  // res.redirect('profile')
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send('Server error');
+    
+  }
+  
+});
 
 
+
+// POST FORM TO ADD POST TO USER (W/ AUTH PROTECTION) :)
+router.post('/addpost', auth, async (req, res) => {
+  
+  
+  const {text}  = req.body
+  console.log(text);
+  const post = {
+    text
+  }
+  
+  try {
+    // Find user
+    user = await User.findById({_id: req.user.id})
+    user.posts.push(post) 
+    await user.save()
+    return res.json(user)
+
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error', err.message, req.body)
+
+  }
+ 
 })
 
-router.post('/form', function(req, res, next) {
-  let{firstname,lastname,email,birthday,psw,pswrepeat}=req.body 
-  console.log(firstname,lastname,email,birthday,psw,pswrepeat);
-  
-  const user = {
-    firstname, lastname, email, birthday, psw
-  } 
-  MongoClient.connect(url, {
-    useUnifiedTopology: true
-  } ,(err, client) => {
-    assert.equal(null, err);
-    console.log("Connected successfully to server");
-   
-    const db = client.db(dbName);
-   
-    const collection = db.collection('users')
-    // collection.find({}).toArray( (err, docs) => {
-    //   if(err) console.error(err);
-      
-    //   console.log("Found records:");
-    //   console.log(docs);
-      
-      
-    // })
-    
-    collection.insertOne(user, (err) => {
-      if(err) console.error(err);
-      console.log("Inserts successful");
-      client.close()
-    } )
-  });
-  res.render('profile')
-});
+// DELETE SECTION
 
+// DELETE USER ACCOUNT :)
+router.delete("/delete", auth, async(req, res) =>{
+  try {
+    await User.findOneAndRemove({_id: req.user.id})
+    return res.json({msg: 'User deleted'})
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error')
 
-router.get('/', function(req, res, next) {
-  res.render('posts', { title: 'Puggly' });
+  }
+})
 
-});
-
-router.get('/', function(req, res, next) {
-  res.render('profile', { title: 'Puggly' });
-
-});
-
-router.get('/', function(req, res, next) {
-  res.render('logout', { title: 'Puggly' });
-
-});
-
-router.get('/', function(req, res, next) {
-  res.render('help', { title: 'Puggly' });
-
-});
-
-router.get('/', function(req, res, next) {
-  res.render('daccount', { title: 'Puggly' });
-
-});
-
-router.get('/', function(req, res, next) {
-  res.render('error', { title: 'Puggly' });
-
-});
 
 
 

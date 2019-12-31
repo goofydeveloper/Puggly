@@ -8,17 +8,19 @@
     <title>Document</title>
 </head>
 <body>
-    <h1> Hello, <%= user.first_name %></h1>
+
+    <% for(var i=0; i < users.length; i++) { %>
+        <h3><%= users[i].first_name%> <%= users[i].last_name%></h3>
 
     <table>
-        <% for(var i=0; i < user.posts.length; i++) { %>
+        <% for(var j=0; j < users[i].posts.length; j++) { %>
             <tr>
-              <td><%= user.posts[i].text %></td>
-              <td><%= user.posts[i].date %></td>
+              <td><%= users[i].posts[j].text %></td>
+              <td><%= users[i].posts[j].date %></td>
             </tr>
          <% } %>
     </table>
-
+    <% } %>
     <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Natus voluptas sint atque error laboriosam ex molestias? Magnam repudiandae enim impedit illo, sit corporis quod at consectetur provident expedita veniam ducimus?</p>
     
 </body>
