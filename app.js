@@ -7,7 +7,7 @@ var bodyParser = require('body-parser')
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
-const connectDB = require('./config/db')
+const connectDB = require('./config/db');
 
 var app = express();
 
@@ -29,9 +29,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
-
-
-
 
  
 // catch 404 and forward to error handler
