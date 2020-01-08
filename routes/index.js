@@ -4,6 +4,25 @@ const jwt = require("jsonwebtoken");
 const config = require("config");
 const User = require("../models/User");
 const auth = require("./auth");
+const axios = require('axios')
+var globalToken = "";
+exports.globalToken = globalToken;
+
+// const login = async () => {
+//   const config = {
+//     headers: {
+//       'x-auth-token': token
+//     }
+//   }
+//   try {
+//     await axios.post('/profile', null, config)
+//   } catch (err) {
+//     console.error(err);
+//     console.log(token);
+    
+    
+//   }
+// } 
 
 // GET SECTION
 
@@ -41,10 +60,7 @@ router.get("/allposts", auth, async (req, res) => {
     res.status(500).send({ msg: "Server error" });
   }
 });
-// GET ERROR PAGE :)
-router.get("/*", function(req, res, next) {
-  res.render("error", { title: "Puggly" });
-});
+;
 
 // LOGOUT / DELETE JWT ?
 router.get("/logout", auth, (req, res) => {
@@ -89,20 +105,13 @@ router.post("/signup", async (req, res) => {
       payload,
       config.get("jwtSecret"),
       { expiresIn: 3600000 },
-      (err, token) => {
+      async (err, token) => {
         if (err) throw err;
-        // res.header("x-auth-token", {token})
+        
         res.json({ token });
 
-        // res.redirect('/profile')
-        // req.headers["x-auth-token"]= {token}
-        // res.redirect('/profile')
       }
-    ).then(token=>{
-
-    // Redirect to /profile?
-    res.redirect('/profile')
-    }).catch(err=>console.log(err));
+    )
 
   } catch (err) {
     console.error(err);
@@ -142,5 +151,10 @@ router.delete("/delete", auth, async (req, res) => {
     res.status(500).send("Server Error");
   }
 });
+
+// GET ERROR PAGE :)
+router.get("/*", function(req, res, next) {
+  res.render("error", { title: "Puggly" });
+})
 
 module.exports = router;
