@@ -6,7 +6,6 @@ const User = require("../models/User");
 const auth = require("./auth");
 const axios = require('axios')
 var globalToken = "";
-exports.globalToken = globalToken;
 
 // const login = async () => {
 //   const config = {
@@ -32,8 +31,12 @@ router.get("/", (req, res) => {
 });
 
 // GET MY PROFILE PAGE :)
-router.get("/profile", auth, async (req, res) => {
-  //
+router.get("/profile", async (req, res) => {
+  console.log("Here?");
+  
+  if(!globalToken) {
+    res.redirect("/")
+  }
   try {
     // Get user object
 
@@ -84,34 +87,42 @@ router.post("/signup", async (req, res) => {
 
     // Create User
     user = new User({
-      first_name,
-      last_name,
-      email,
-      birthday,
-      password
+      first_name, last_name, email, birthday, password
     });
 
+    
     await user.save();
 
+    // console.log(user.id);
+    
     // add user_id to jwt payload
     const payload = {
       user: {
         id: user.id
+        //id: "hello"
       }
     };
-
+    // const payload2 = {
+    //   user: {
+    //     id: "hello"
+    //   }
+    // }
+    // console.log("this is the payload: ",payload);
+    // console.log("comparison: ", payload2);
+    
     //create jsonwebtoken for authentication
-    jwt.sign(
-      payload,
-      config.get("jwtSecret"),
-      { expiresIn: 3600000 },
-      async (err, token) => {
-        if (err) throw err;
+    await jwt.sign(payload, config.get("jwtSecret"), { expiresIn: 3600000 },
+       (err, token) => {
+        if (err) throw err
+       
+        globalToken = token
+        console.log(globalToken);
         
-        res.json({ token });
+        // res.json({ token: token });
 
       }
     )
+    res.json({globalToken})
 
   } catch (err) {
     console.error(err);
@@ -120,7 +131,7 @@ router.post("/signup", async (req, res) => {
 });
 
 // POST FORM TO ADD POST TO USER (W/ AUTH PROTECTION) :)
-router.post("/addpost", auth, async (req, res) => {
+router.post("/addposts", auth, async (req, res) => {
   const { text } = req.body;
   console.log(text);
   const post = {
